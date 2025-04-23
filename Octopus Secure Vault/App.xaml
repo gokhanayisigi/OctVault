@@ -1,0 +1,30 @@
+﻿<Application x:Class="Octopus_File_Vault.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Octopus_File_Vault"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Application-wide styles -->
+                <ResourceDictionary>
+                    <!-- Default font and text settings -->
+                    <Style TargetType="{x:Type Control}">
+                        <Setter Property="FontFamily" Value="Garamond"/>
+                    </Style>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="FontFamily" Value="Garamond"/>
+                    </Style>
+
+                    <!-- Default colors and brushes -->
+                    <SolidColorBrush x:Key="PrimaryBackground" Color="#F9F4ED"/>
+                    <SolidColorBrush x:Key="SecondaryBackground" Color="#EFE5D7"/>
+                    <SolidColorBrush x:Key="PrimaryText" Color="#3A2E21"/>
+                    <SolidColorBrush x:Key="SecondaryText" Color="#776956"/>
+                    <SolidColorBrush x:Key="AccentColor" Color="#A68B67"/>
+                    <SolidColorBrush x:Key="DarkAccentColor" Color="#61513C"/>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
