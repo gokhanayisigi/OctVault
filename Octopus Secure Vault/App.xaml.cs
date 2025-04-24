@@ -10,4 +10,3 @@ namespace Octopus_File_Vault;
 public partial class App : Application
 {
 }
-

@@ -29,14 +29,56 @@ namespace Octopus_File_Vault
         private EncryptedFileInfo currentSelectedFile; // Store the currently selected file for operations
         private readonly string databaseFilePath; // Path to the store.octus file
 
+        // Dictionaries to keep track of files in each category
+        private Dictionary<FileTypeCategorizer.FileCategory, List<EncryptedFileInfo>> categorizedFiles;
+
         public MainWindow()
         {
             InitializeComponent();
+
             // Set the database file path to the application's root directory
             databaseFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "store.octus");
 
+            // Initialize category panels and categorized files dictionary
+            InitializeFileCategoryPanels();
+
             // Load encrypted files data from the database when application starts
             LoadEncryptedFilesFromDatabase();
+        }
+
+        private Dictionary<FileTypeCategorizer.FileCategory, StackPanel> categoryPanels;
+        private Dictionary<FileTypeCategorizer.FileCategory, ScrollViewer> categoryScrollViewers;
+
+        private void InitializeFileCategoryPanels()
+        {
+            // Initialize dictionaries to store references to UI elements
+            categoryPanels = new Dictionary<FileTypeCategorizer.FileCategory, StackPanel>
+            {
+                { FileTypeCategorizer.FileCategory.Image, ImagesFilesPanel },
+                { FileTypeCategorizer.FileCategory.Video, VideosFilesPanel },
+                { FileTypeCategorizer.FileCategory.Document, DocumentsFilesPanel },
+                { FileTypeCategorizer.FileCategory.Archive, ArchivesFilesPanel },
+                // The "Other" category will use the main EncryptedFilesPanel
+            };
+
+            categoryScrollViewers = new Dictionary<FileTypeCategorizer.FileCategory, ScrollViewer>
+            {
+                { FileTypeCategorizer.FileCategory.Image, ImagesListView },
+                { FileTypeCategorizer.FileCategory.Video, VideosListView },
+                { FileTypeCategorizer.FileCategory.Document, DocumentsListView },
+                { FileTypeCategorizer.FileCategory.Archive, ArchivesListView },
+                // The "Other" category will use the main FilesListView
+            };
+
+            // Initialize categorized files dictionary
+            categorizedFiles = new Dictionary<FileTypeCategorizer.FileCategory, List<EncryptedFileInfo>>
+            {
+                { FileTypeCategorizer.FileCategory.Image, new List<EncryptedFileInfo>() },
+                { FileTypeCategorizer.FileCategory.Video, new List<EncryptedFileInfo>() },
+                { FileTypeCategorizer.FileCategory.Document, new List<EncryptedFileInfo>() },
+                { FileTypeCategorizer.FileCategory.Archive, new List<EncryptedFileInfo>() },
+                { FileTypeCategorizer.FileCategory.Other, new List<EncryptedFileInfo>() }
+            };
         }
 
         // Method to load encrypted files from the database file
@@ -54,13 +96,18 @@ namespace Octopus_File_Vault
                     if (string.IsNullOrWhiteSpace(encryptedContent))
                     {
                         encryptedFiles = new List<EncryptedFileInfo>();
+                        UpdateEmptyStates(); // Update UI states
                         return;
                     }
 
                     // Deserialize the JSON content to a List<EncryptedFileInfo>
                     encryptedFiles = JsonSerializer.Deserialize<List<EncryptedFileInfo>>(encryptedContent);
 
+                    // Clear all category panels first
+                    ClearAllCategoryPanels();
+
                     // Verify files still exist and add them to the UI
+                    bool hasValidFiles = false;
                     if (encryptedFiles != null && encryptedFiles.Count > 0)
                     {
                         foreach (var fileInfo in encryptedFiles.ToArray()) // Use ToArray to avoid collection modification during iteration
@@ -69,6 +116,7 @@ namespace Octopus_File_Vault
                             {
                                 // Add the file to the vault UI
                                 AddFileToVault(fileInfo);
+                                hasValidFiles = true;
                             }
                             else
                             {
@@ -79,20 +127,17 @@ namespace Octopus_File_Vault
 
                         // Save the database again in case we removed any files
                         SaveEncryptedFilesToDatabase();
-
-                        // Show the vault and hide empty state if we have files
-                        if (encryptedFiles.Count > 0)
-                        {
-                            EmptyVaultState.Visibility = Visibility.Collapsed;
-                            FilesListView.Visibility = Visibility.Visible;
-                        }
                     }
+
+                    // Update UI states based on whether we have files
+                    UpdateEmptyStates();
                 }
                 else
                 {
                     // If the file doesn't exist, create an empty one
                     encryptedFiles = new List<EncryptedFileInfo>();
                     SaveEncryptedFilesToDatabase();
+                    UpdateEmptyStates(); // Update UI states
                 }
             }
             catch (Exception ex)
@@ -103,6 +148,117 @@ namespace Octopus_File_Vault
                 // Initialize with an empty list on error
                 encryptedFiles = new List<EncryptedFileInfo>();
                 SaveEncryptedFilesToDatabase(); // Create a new database file
+                UpdateEmptyStates(); // Update UI states
+            }
+        }
+
+        // Helper method to update empty states based on file count
+        private void UpdateEmptyStates()
+        {
+            // Main panel state (structure is different from category panels)
+            if (encryptedFiles.Count > 0)
+            {
+                // In the All Files tab, EmptyVaultState is the Grid that contains both
+                // the empty message and the FilesListView
+                // We need to keep EmptyVaultState visible but show FilesListView
+                EmptyVaultState.Visibility = Visibility.Visible;
+
+                // Find the empty message panel inside EmptyVaultState and hide it
+                foreach (UIElement element in EmptyVaultState.Children)
+                {
+                    if (element is StackPanel panel &&
+                        panel.VerticalAlignment == VerticalAlignment.Center &&
+                        element != FilesListView)
+                    {
+                        panel.Visibility = Visibility.Collapsed;
+                        break;
+                    }
+                }
+
+                // Show the files list
+                FilesListView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                // Keep EmptyVaultState visible
+                EmptyVaultState.Visibility = Visibility.Visible;
+
+                // Find the empty message panel inside EmptyVaultState and show it
+                foreach (UIElement element in EmptyVaultState.Children)
+                {
+                    if (element is StackPanel panel &&
+                        panel.VerticalAlignment == VerticalAlignment.Center &&
+                        element != FilesListView)
+                    {
+                        panel.Visibility = Visibility.Visible;
+                        break;
+                    }
+                }
+
+                // Hide the files list
+                FilesListView.Visibility = Visibility.Collapsed;
+            }
+
+            // Category panel states
+            foreach (var category in categorizedFiles.Keys)
+            {
+                if (!categoryPanels.ContainsKey(category) || !categoryScrollViewers.ContainsKey(category))
+                    continue;
+
+                if (categorizedFiles[category].Count > 0)
+                {
+                    categoryScrollViewers[category].Visibility = Visibility.Visible;
+
+                    // Hide empty state
+                    if (categoryScrollViewers[category].Parent is Grid categoryGrid)
+                    {
+                        foreach (UIElement element in categoryGrid.Children)
+                        {
+                            if (element is StackPanel panel &&
+                                panel.VerticalAlignment == VerticalAlignment.Center &&
+                                element != categoryScrollViewers[category])
+                            {
+                                panel.Visibility = Visibility.Collapsed;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    categoryScrollViewers[category].Visibility = Visibility.Collapsed;
+
+                    // Show empty state
+                    if (categoryScrollViewers[category].Parent is Grid categoryGrid)
+                    {
+                        foreach (UIElement element in categoryGrid.Children)
+                        {
+                            if (element is StackPanel panel &&
+                                panel.VerticalAlignment == VerticalAlignment.Center &&
+                                element != categoryScrollViewers[category])
+                            {
+                                panel.Visibility = Visibility.Visible;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear all category panels
+        private void ClearAllCategoryPanels()
+        {
+            EncryptedFilesPanel.Children.Clear();
+
+            foreach (var panel in categoryPanels.Values)
+            {
+                panel.Children.Clear();
+            }
+
+            foreach (var category in categorizedFiles.Keys)
+            {
+                categorizedFiles[category].Clear();
             }
         }
 
@@ -319,6 +475,49 @@ namespace Octopus_File_Vault
 
         private void AddFileToVault(EncryptedFileInfo fileInfo)
         {
+            // Determine the file's category based on the original file (not .octopus extension)
+            // We need to extract the original filename from .octopus file
+            string originalPath = fileInfo.FilePath;
+            if (fileInfo.FileName.EndsWith(".octopus"))
+            {
+                // Remove .octopus extension to get original file type
+                string originalName = Path.GetFileNameWithoutExtension(fileInfo.FileName);
+                originalPath = Path.Combine(Path.GetDirectoryName(fileInfo.FilePath), originalName);
+            }
+
+            var fileCategory = FileTypeCategorizer.GetFileCategory(originalPath);
+
+            // Add to categorized files collection
+            if (categorizedFiles.ContainsKey(fileCategory))
+            {
+                categorizedFiles[fileCategory].Add(fileInfo);
+            }
+            else
+            {
+                // If category not found (shouldn't happen), add to Other
+                categorizedFiles[FileTypeCategorizer.FileCategory.Other].Add(fileInfo);
+            }
+
+            // Create a new file item for the vault
+            Border fileItemBorder = CreateFileItemBorder(fileInfo, originalPath);
+
+            // Add to the main "All Files" panel
+            EncryptedFilesPanel.Children.Add(fileItemBorder);
+
+            // Also add to the category-specific panel
+            if (categoryPanels.ContainsKey(fileCategory))
+            {
+                // Create another instance of the file item for the category panel
+                Border categoryFileItemBorder = CreateFileItemBorder(fileInfo, originalPath);
+                categoryPanels[fileCategory].Children.Add(categoryFileItemBorder);
+            }
+
+            // Update all empty states
+            UpdateEmptyStates();
+        }
+
+        private Border CreateFileItemBorder(EncryptedFileInfo fileInfo, string pathForIcon = null)
+        {
             // Create a new file item in the vault
             Border fileItemBorder = new Border
             {
@@ -331,7 +530,7 @@ namespace Octopus_File_Vault
             fileItemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             fileItemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // File icon
+            // File icon - use the appropriate icon based on file category
             Border iconBorder = new Border
             {
                 Background = (SolidColorBrush)FindResource("SecondaryBackground"),
@@ -341,9 +540,14 @@ namespace Octopus_File_Vault
                 Margin = new Thickness(0, 0, 15, 0)
             };
 
+            // Get appropriate icon based on file type
+            string fileIcon = pathForIcon != null ?
+                FileTypeCategorizer.GetCategoryIcon(pathForIcon) :
+                FileTypeCategorizer.GetCategoryIcon(fileInfo.FilePath);
+
             TextBlock iconText = new TextBlock
             {
-                Text = "📄",
+                Text = fileIcon,
                 FontSize = 20,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -447,12 +651,7 @@ namespace Octopus_File_Vault
 
             fileItemBorder.Child = fileItemGrid;
 
-            // Add to the panel
-            EncryptedFilesPanel.Children.Add(fileItemBorder);
-
-            // Show the vault and hide empty state
-            EmptyVaultState.Visibility = Visibility.Collapsed;
-            FilesListView.Visibility = Visibility.Visible;
+            return fileItemBorder;
         }
 
         private void FileOptionsMenu_Click(object sender, RoutedEventArgs e)
@@ -587,36 +786,59 @@ namespace Octopus_File_Vault
             }
         }
 
-
         // Method to remove a file from the vault UI
         private void RemoveFileFromVault(EncryptedFileInfo fileInfo)
         {
-            // Find the border containing this file info
-            Border borderToRemove = null;
+            // Get the file category
+            string originalPath = fileInfo.FilePath;
+            if (fileInfo.FileName.EndsWith(".octopus"))
+            {
+                // Remove .octopus extension to get original file type
+                string originalName = Path.GetFileNameWithoutExtension(fileInfo.FileName);
+                originalPath = Path.Combine(Path.GetDirectoryName(fileInfo.FilePath), originalName);
+            }
 
-            foreach (UIElement element in EncryptedFilesPanel.Children)
+            var fileCategory = FileTypeCategorizer.GetFileCategory(originalPath);
+
+            // Remove from categorized files collection
+            if (categorizedFiles.ContainsKey(fileCategory))
+            {
+                categorizedFiles[fileCategory].Remove(fileInfo);
+            }
+
+            // Remove from the main panel
+            RemoveFileFromPanel(EncryptedFilesPanel, fileInfo);
+
+            // Also remove from the category-specific panel
+            if (categoryPanels.ContainsKey(fileCategory))
+            {
+                RemoveFileFromPanel(categoryPanels[fileCategory], fileInfo);
+            }
+
+            // Update all empty states
+            UpdateEmptyStates();
+        }
+
+        // Helper method to remove file from a specific panel
+        private void RemoveFileFromPanel(StackPanel panel, EncryptedFileInfo fileInfo)
+        {
+            List<Border> bordersToRemove = new List<Border>();
+
+            foreach (UIElement element in panel.Children)
             {
                 if (element is Border border && border.Tag is EncryptedFileInfo info)
                 {
-                    if (info == fileInfo)
+                    if (info.FilePath == fileInfo.FilePath)
                     {
-                        borderToRemove = border;
-                        break;
+                        bordersToRemove.Add(border);
                     }
                 }
             }
 
-            // Remove the item if found
-            if (borderToRemove != null)
+            // Remove all matching borders
+            foreach (var border in bordersToRemove)
             {
-                EncryptedFilesPanel.Children.Remove(borderToRemove);
-
-                // Show empty state if no files remain
-                if (EncryptedFilesPanel.Children.Count == 0)
-                {
-                    FilesListView.Visibility = Visibility.Collapsed;
-                    EmptyVaultState.Visibility = Visibility.Visible;
-                }
+                panel.Children.Remove(border);
             }
         }
 

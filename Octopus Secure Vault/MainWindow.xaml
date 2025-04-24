@@ -206,12 +206,14 @@
                     </Style>
                 </TabControl.Resources>
 
+                <!-- Modified Vault TabItem with nested tab system for file categories -->
                 <TabItem Header="Vault" Style="{StaticResource TabStyle}">
                     <Grid>
                         <!-- Vault Tab Content -->
                         <Border Style="{StaticResource PanelStyle}">
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
@@ -233,29 +235,134 @@
 
                                     <!-- Add Button -->
                                     <Button Grid.Column="1" x:Name="ImportEncryptedFileButton" 
-                                            Content="+" Style="{StaticResource AddButtonStyle}" 
-                                            VerticalAlignment="Top" Margin="0,0,0,0"
-                                            ToolTip="Import encrypted file" 
-                                            Click="ImportEncryptedFile_Click" />
+                            Content="+" Style="{StaticResource AddButtonStyle}" 
+                            VerticalAlignment="Top" Margin="0,0,0,0"
+                            ToolTip="Import encrypted file" 
+                            Click="ImportEncryptedFile_Click" />
                                 </Grid>
 
-                                <!-- Empty State -->
-                                <Grid Grid.Row="1" x:Name="EmptyVaultState" Visibility="Visible">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
-                                            <TextBlock Text="🔒" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                        </Border>
-                                        <TextBlock Text="Your vault is empty" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
-                                        <TextBlock Text="Encrypt files to add them to your secure vault" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Grid>
+                                <!-- File Category Tab Control -->
+                                <TabControl Grid.Row="1" x:Name="FileTypesTabControl" Margin="0,10,0,0"
+                            BorderThickness="0" Background="Transparent">
+                                    <TabControl.Resources>
+                                        <Style TargetType="TabPanel">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Style>
+                                    </TabControl.Resources>
 
-                                <!-- Files List -->
-                                <ScrollViewer Grid.Row="1" x:Name="FilesListView" Visibility="Collapsed">
-                                    <StackPanel x:Name="EncryptedFilesPanel">
-                                        <!-- Sample File Item - Will be populated programmatically -->
-                                    </StackPanel>
-                                </ScrollViewer>
+                                    <!-- File Category Tab Style -->
+                                    <TabControl.ItemContainerStyle>
+                                        <Style TargetType="TabItem" BasedOn="{StaticResource TabStyle}">
+                                            <Setter Property="Padding" Value="15,8"/>
+                                            <Setter Property="FontSize" Value="13"/>
+                                        </Style>
+                                    </TabControl.ItemContainerStyle>
+
+                                    <!-- All Files Tab -->
+                                    <TabItem Header="All Files">
+                                        <!-- Empty State -->
+                                        <Grid x:Name="EmptyVaultState" Visibility="Visible">
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
+                                                    <TextBlock Text="🔒" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="Your vault is empty" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                                <TextBlock Text="Encrypt files to add them to your secure vault" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Files List -->
+                                            <ScrollViewer x:Name="FilesListView" Visibility="Collapsed">
+                                                <StackPanel x:Name="EncryptedFilesPanel">
+                                                    <!-- Sample File Item - Will be populated programmatically -->
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </TabItem>
+
+                                    <!-- Images Tab -->
+                                    <TabItem Header="Images">
+                                        <Grid x:Name="ImagesTabContent">
+                                            <!-- Empty State -->
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
+                                                    <TextBlock Text="🖼️" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="No encrypted images" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                                <TextBlock Text="Encrypt image files to see them here" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Files List -->
+                                            <ScrollViewer x:Name="ImagesListView" Visibility="Collapsed">
+                                                <StackPanel x:Name="ImagesFilesPanel">
+                                                    <!-- Will be populated programmatically -->
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </TabItem>
+
+                                    <!-- Videos Tab -->
+                                    <TabItem Header="Videos">
+                                        <Grid x:Name="VideosTabContent">
+                                            <!-- Empty State -->
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
+                                                    <TextBlock Text="🎬" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="No encrypted videos" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                                <TextBlock Text="Encrypt video files to see them here" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Files List -->
+                                            <ScrollViewer x:Name="VideosListView" Visibility="Collapsed">
+                                                <StackPanel x:Name="VideosFilesPanel">
+                                                    <!-- Will be populated programmatically -->
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </TabItem>
+
+                                    <!-- Documents Tab -->
+                                    <TabItem Header="Documents">
+                                        <Grid x:Name="DocumentsTabContent">
+                                            <!-- Empty State -->
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
+                                                    <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="No encrypted documents" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                                <TextBlock Text="Encrypt document files to see them here" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Files List -->
+                                            <ScrollViewer x:Name="DocumentsListView" Visibility="Collapsed">
+                                                <StackPanel x:Name="DocumentsFilesPanel">
+                                                    <!-- Will be populated programmatically -->
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </TabItem>
+
+                                    <!-- Archives Tab -->
+                                    <TabItem Header="Archives">
+                                        <Grid x:Name="ArchivesTabContent">
+                                            <!-- Empty State -->
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <Border Background="{StaticResource SecondaryBackground}" Width="60" Height="60" CornerRadius="30" Margin="0,0,0,15">
+                                                    <TextBlock Text="🗂️" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="No encrypted archives" FontFamily="Garamond" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource PrimaryText}" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                                <TextBlock Text="Encrypt archive files to see them here" FontFamily="Garamond" FontSize="14" Foreground="{StaticResource SecondaryText}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Files List -->
+                                            <ScrollViewer x:Name="ArchivesListView" Visibility="Collapsed">
+                                                <StackPanel x:Name="ArchivesFilesPanel">
+                                                    <!-- Will be populated programmatically -->
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </TabItem>
+                                </TabControl>
                             </Grid>
                         </Border>
 
